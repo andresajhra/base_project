@@ -1,9 +1,10 @@
-import { Router } from 'express';
+import { Router, IRouter } from 'express';
 import healthRouter from './health.routes';
-
-const router = Router();
+import authRouter from './auth.routes';
+const router: IRouter = Router();
 
 router.use('/health', healthRouter);
+router.use('/auth', authRouter);
 
 // Add your routes here:
 // router.use('/users', usersRouter);

@@ -1,7 +1,7 @@
-import { Router } from 'express';
+import { IRouter, Router } from 'express';
 import { healthCheck } from '../controllers/health.controller';
 
-const router = Router();
+const router: IRouter = Router();
 router.get('/', healthCheck);
 
 export default router;
