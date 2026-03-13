@@ -1,19 +1,38 @@
-import { Request, Response, NextFunction } from 'express';
-import { verifyToken } from '@/utils/jwt.utils';
+import type { Request, Response, NextFunction } from 'express';
+import jwt from 'jsonwebtoken';
+import { prisma } from '@/config/prisma';
+import type { JwtPayload } from '@/types';
 
-export const auth = (req: Request, res: Response, next: NextFunction): void => {
+export const auth = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  const token = req.headers.authorization?.split(' ')[1];
+
+  if (!token) {
+    res.status(401).json({ error: 'Token requerido' });
+    return;
+  }
+
   try {
-    const authHeader = req.headers.authorization;
+    const { id } = jwt.verify(
+      token,
+      process.env.JWT_SECRET!
+    ) as JwtPayload;
 
-    if (!authHeader?.startsWith('Bearer ')) {
-      res.status(401).json({ error: 'No token provided' });
+    const usuario = await prisma.usuario.findUnique({
+      where: { id },
+    });
+
+    if (!usuario || !usuario.activo) {
+      res.status(401).json({ error: 'Usuario inactivo o no existe' });
       return;
     }
 
-    const token = authHeader.split(' ')[1];
-    req.user = verifyToken(token);
+    req.usuario = usuario;
     next();
-  } catch (error) {
-    res.status(401).json({ error: 'Invalid or expired token' });
+  } catch {
+    res.status(401).json({ error: 'Token inválido o expirado' });
   }
 };

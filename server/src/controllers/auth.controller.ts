@@ -9,32 +9,33 @@ import {
 } from '@/utils/jwt.utils';
 
 import { AuthResponse } from '@/types';
+import { sendError, sendSuccess } from '@/utils/response';
 
 export const register = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { email, password } = req.body;
+    const { email, password, nombre } = req.body;
 
-    const exists = await prisma.user.findUnique({ where: { email } });
+    const exists = await prisma.usuario.findUnique({ where: { email } });
     if (exists) {
-      res.status(400).json({ error: 'Email already in use' });
+      sendError(res, 'Email already in use', 400);
       return;
     }
 
     const hashed = await bcrypt.hash(password, 10);
-    const user = await prisma.user.create({
-      data: { email, password: hashed },
+    const user = await prisma.usuario.create({
+      data: { email, password: hashed, nombre },
     });
 
-    const payload = { id: user.id, email: user.email };
+    const payload = { id: user.id, email: user.email, nombre: user.nombre };
     const response: AuthResponse = {
       token: generateToken(payload),
       refreshToken: generateRefreshToken(payload),
-      user: { id: user.id, email: user.email },
+      usuario: { id: user.id, email: user.email, nombre: user.nombre },
     };
 
-    res.status(201).json(response);
+    sendSuccess(res, response, 201);
   } catch (error) {
-    res.status(500).json({ error: 'Internal server error' });
+    sendError(res, 'Internal server error', 500);
   }
 };
 
@@ -42,22 +43,22 @@ export const login = async (req: Request, res: Response): Promise<void> => {
   try {
     const { email, password } = req.body;
 
-    const user = await prisma.user.findUnique({ where: { email } });
+    const user = await prisma.usuario.findUnique({ where: { email } });
     if (!user || !(await bcrypt.compare(password, user.password))) {
-      res.status(401).json({ error: 'Invalid credentials' });
+      sendError(res, 'Invalid credentials', 401);
       return;
     }
 
-    const payload = { id: user.id, email: user.email };
+    const payload = { id: user.id, email: user.email, nombre: user.nombre };
     const response: AuthResponse = {
       token: generateToken(payload),
       refreshToken: generateRefreshToken(payload),
-      user: { id: user.id, email: user.email },
+      usuario: { id: user.id, email: user.email, nombre: user.nombre },
     };
 
-    res.json(response);
+    sendSuccess(res, response);
   } catch (error) {
-    res.status(500).json({ error: 'Internal server error' });
+    sendError(res, 'Internal server error', 500);
   }
 };
 
@@ -65,42 +66,42 @@ export const refresh = async (req: Request, res: Response): Promise<void> => {
   try {
     const { refreshToken } = req.body;
     if (!refreshToken) {
-      res.status(401).json({ error: 'No refresh token provided' });
+      sendError(res, 'No refresh token provided', 401);
       return;
     }
 
     const payload = verifyRefreshToken(refreshToken);
-    const user = await prisma.user.findUnique({ where: { id: payload.id } });
+    const user = await prisma.usuario.findUnique({ where: { id: payload.id } });
 
     if (!user) {
-      res.status(401).json({ error: 'User not found' });
+      sendError(res, 'User not found', 404);
       return;
     }
 
-    const newPayload = { id: user.id, email: user.email };
-    res.json({
+    const newPayload = { id: user.id, email: user.email, nombre: user.nombre };
+    sendSuccess(res, {
       token: generateToken(newPayload),
       refreshToken: generateRefreshToken(newPayload),
     });
   } catch (error) {
-    res.status(401).json({ error: 'Invalid or expired refresh token' });
+    sendError(res, 'Invalid or expired refresh token', 401);
   }
 };
 
 export const me = async (req: Request, res: Response): Promise<void> => {
   try {
-    const user = await prisma.user.findUnique({
-      where: { id: req.user!.id },
-      select: { id: true, email: true, createdAt: true },
+    const user = await prisma.usuario.findUnique({
+      where: { id: req.usuario!.id },
+      select: { id: true, email: true, created_at: true },
     });
 
     if (!user) {
-      res.status(404).json({ error: 'User not found' });
+      sendError(res, 'User not found', 404);
       return;
     }
 
-    res.json(user);
+    sendSuccess(res, user);
   } catch (error) {
-    res.status(500).json({ error: 'Internal server error' });
+    sendError(res, 'Internal server error', 500);
   }
 };
