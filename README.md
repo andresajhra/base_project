@@ -1,15 +1,26 @@
 
 CARACTERISTICAS
 
-backend
-auth jwt
-orm prisma
-role-based access control (RBAC)
-protected and public routes 
-zod
+STACK
+Express JS + React Js + TS
 
-frontend
+BACKEND
+auth jwt (complete)
+orm prisma (complete)
+role-based access control (RBAC) (progress)
+protected and public routes (progress)
+zod (pending)
+
+FRONTEND
+shadcn (complete)
+tailwindcss (complete)
+frontend structure
 dashboard
-components library shadcn and tailwindcss
+zustand (complete)
+zod (complete)
+components library
 protected and public routes
-zod
+react-hook-form (complete)
+@hookform/resolvers (complete)
+tanksTable (complete)
+tanksQuery (complete)
