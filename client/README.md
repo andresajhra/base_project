@@ -1,73 +1,151 @@
-# React + TypeScript + Vite
+# 📁 Estructura de Carpetas — React.js (Proyectos a Gran Escala)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+> Arquitectura moderna, escalable y mantenible para aplicaciones React con TypeScript.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## 🗂️ Vista General
 
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```
+src/
+├── assets/
+├── components/
+│   ├── ui/
+│   ├── forms/
+│   ├── layout/
+│   └── common/
+├── features/
+│   ├── auth/
+│   ├── dashboard/
+│   └── users/
+├── hooks/
+├── services/
+├── store/
+├── pages/
+├── lib/
+├── types/
+├── config/
+└── providers/
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+---
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## 📋 Referencia de Carpetas
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+| Carpeta | Contenido | Capa |
+|---|---|---|
+| `assets/` | Fuentes, imágenes, iconos, SVGs estáticos | Estática |
+| `components/` | Componentes reutilizables y presentacionales | UI |
+| `features/` | Módulos de negocio autocontenidos | Dominio |
+| `hooks/` | Custom hooks compartidos a nivel global | Lógica |
+| `services/` | Capa HTTP, clientes API, interceptores | Datos |
+| `store/` | Estado global (Redux, Zustand, Jotai) | Estado |
+| `pages/` | Componentes de entrada por ruta | Routing |
+| `lib/` | Utilidades puras, helpers, formateadores | Util |
+| `types/` | Tipos e interfaces TypeScript compartidos | Tipos |
+| `config/` | Variables de entorno, rutas, feature flags | Config |
+| `providers/` | Proveedores de contexto React | Contexto |
+
+---
+
+## ⭐ La Carpeta Más Importante: `features/`
+
+Cada feature es un **mini-módulo independiente**. Si eliminas o despliegas una feature, todo lo relacionado está en un solo lugar.
+
 ```
+src/features/auth/
+├── components/        ← LoginForm, OTPInput
+├── hooks/             ← useLogin, useSession
+├── store/             ← authSlice.ts
+├── services/          ← authApi.ts
+├── types/             ← auth.types.ts
+└── index.ts           ← barrel export público
+```
+
+---
+
+## 📌 Reglas Clave
+
+### `components/` — Solo UI "tonta"
+- ✅ Botones, cards, modales, inputs reutilizables
+- ❌ Sin lógica de negocio ni llamadas a la API
+- ❌ Si el componente conoce tu dominio → va en `features/`
+
+### `services/` — Dueña de toda la capa HTTP
+- ✅ Las funciones de servicio son las únicas que llaman a `fetch` o `axios`
+- ✅ Los componentes y hooks solo invocan funciones de servicio
+- ✅ Facilita el mock en tests
+
+### `store/` — Solo configuración global
+- ✅ `index.ts` ensambla el store, `rootReducer.ts`, middlewares
+- ✅ Los slices/átomos concretos viven dentro de `features/`
+
+### `types/` — Solo tipos verdaderamente compartidos
+- ✅ Formas de respuesta de la API, enums globales
+- ❌ Los tipos específicos de una feature permanecen en su feature
+
+### `providers/` — Composición única en la raíz
+```tsx
+// main.tsx
+<AppProviders>
+  <App />
+</AppProviders>
+
+// providers/AppProviders.tsx
+<QueryClientProvider>
+  <ThemeProvider>
+    <RouterProvider>
+      {children}
+    </RouterProvider>
+  </ThemeProvider>
+</QueryClientProvider>
+```
+
+---
+
+## 📄 Archivos Raíz
+
+```
+/
+├── src/
+├── public/
+├── App.tsx
+├── main.tsx
+├── vite.config.ts
+├── tsconfig.json
+├── .env
+├── .env.example
+└── package.json
+```
+
+---
+
+## 🔗 Flujo de Dependencias
+
+```
+pages/  →  features/  →  services/  →  API
+   ↓            ↓
+components/   store/
+   ↓            ↓
+  hooks/  →   lib/  →  types/
+```
+
+> **Regla de oro:** Las dependencias fluyen hacia abajo. `features/` puede importar de `components/`, `hooks/`, `lib/` y `services/`, pero **nunca al revés**.
+
+---
+
+## 🛠️ Stack Recomendado
+
+| Categoría | Herramienta |
+|---|---|
+| Bundler | Vite |
+| Lenguaje | TypeScript |
+| Estado global | Redux Toolkit / Zustand |
+| Data fetching | TanStack Query (React Query) |
+| Routing | React Router v6 |
+| Testing | Vitest + Testing Library |
+| Estilos | Tailwind CSS / CSS Modules |
+
+---
+
+*Tip: Este patrón funciona con cualquier gestor de estado — Redux Toolkit, Zustand o Jotai. La estructura de `features/` permanece idéntica.*

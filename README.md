@@ -10,17 +10,23 @@ orm prisma (complete)
 role-based access control (RBAC) (progress)
 protected and public routes (progress)
 zod (pending)
+env
 
 FRONTEND
 shadcn (complete)
 tailwindcss (complete)
-frontend structure
-dashboard
 zustand (complete)
 zod (complete)
-components library
-protected and public routes
 react-hook-form (complete)
 @hookform/resolvers (complete)
 tanksTable (complete)
 tanksQuery (complete)
+lucida-react
+env (complete)
+
+protected, public, role routes
+frontend structure
+components library
+dashboard
+dark/light mode
+font customize
