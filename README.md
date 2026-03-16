@@ -21,12 +21,13 @@ react-hook-form (complete)
 @hookform/resolvers (complete)
 tanksTable (complete)
 tanksQuery (complete)
-lucida-react
+lucida-react (complete)
 env (complete)
 
 protected, public, role routes
-frontend structure
-components library
+frontend structure (complete)
+components library (complete)
 dashboard
-dark/light mode
+dark/light mode (complete)
+paleta de colores (complete)
 font customize
