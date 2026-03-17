@@ -6,6 +6,7 @@ const getEnvVar = (key: keyof ImportMetaEnv): string => {
 
 export const env = {
   apiUrl: getEnvVar('VITE_API_URL'),
+  useMock: getEnvVar('VITE_USE_MOCK'),
   appName: getEnvVar('VITE_APP_NAME'),
   isDev: import.meta.env.DEV,
   isProd: import.meta.env.PROD,
