@@ -10,7 +10,7 @@ export interface ApiResponse<T = unknown> {
 }
 
 export interface JwtPayload {
-  id: string;    // uuid del usuario (nunca el id interno)
+  id: number;
   email: string;
   nombre: string;
 }
@@ -19,21 +19,26 @@ export interface AuthResponse {
   token: string;
   refreshToken: string;
   usuario: {
-    uuid: string;
+    id: number;
     email: string;
     nombre: string;
   };
 }
 
-// AuthenticatedRequest — usar en handlers protegidos por auth()
-// No usar declare global para evitar conflictos de tipos con Express router
-export interface AuthenticatedRequest extends Request {
-  usuario: Usuario;
+declare global {
+  namespace Express {
+    interface Request {
+      usuario?: JwtPayload;
+    }
+    interface Request {
+      Usuario?: Usuario;
+    }
+  }
 }
 
-// Permite usar AuthenticatedRequest en Express router sin errores de tipo.
-// Usar así en las rutas:
-//   router.post('/', auth, can(...), wrap(controller.create));
-export const wrap = (
-  fn: (req: AuthenticatedRequest, res: Response, next: NextFunction) => Promise<void>
-) => (req: Request, res: Response, next: NextFunction) => fn(req as AuthenticatedRequest, res, next);
+
+
+
+export type AuthenticatedRequest = Express.Request & {
+  usuario: Usuario;   // non-optional — only use after auth middleware
+};

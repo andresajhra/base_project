@@ -30,7 +30,6 @@ const router = createBrowserRouter([
     element: <PublicRoute />,
     children: [
       { path: "/login", element: <LoginPage /> },
-      { path: "/", element: <LoginPage /> },
     ],
   },
 

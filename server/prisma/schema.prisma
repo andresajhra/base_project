@@ -1,6 +1,5 @@
 datasource db {
   provider = "postgresql"
-  // url se configura en prisma.config.ts (Prisma 7)
 }
 
 generator client {
@@ -8,136 +7,69 @@ generator client {
   output   = "../src/generated/prisma"
 }
 
-// ─── Convención de IDs ────────────────────────────────────────────────────────
-// Todos los modelos siguen el patrón id + uuid:
-//   id   → Int autoincrement, PK interna, solo para JOINs, NUNCA se expone
-//   uuid → UUID v4, índice único, es el identificador público (API, URLs, JWT)
-//
-// ─── Campos de auditoría ─────────────────────────────────────────────────────
-//   created_at  → fecha de creación
-//   updated_at  → fecha de última modificación (automático con @updatedAt)
-//   deleted_at  → fecha de borrado lógico (soft delete), null = activo
-//   created_by  → uuid del usuario que creó el registro
-//   updated_by  → uuid del usuario que modificó el registro
-//   deleted_by  → uuid del usuario que eliminó el registro
-
 model Modulo {
-  id   Int    @id @default(autoincrement())
-  uuid String @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-
+  id        Int       @id @default(autoincrement())
   nombre    String
   ruta_base String
-
-  permisos Permiso[]
-
+  permisos  Permiso[]
   @@map("modulo")
 }
 
 model Permiso {
-  id   Int    @id @default(autoincrement())
-  uuid String @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-
+  id        Int          @id @default(autoincrement())
   modulo_id Int
-  accion    String  // "create" | "read" | "update" | "delete"
-  recurso   String  // "facturas" | "usuarios"
-  activo    Boolean @default(true)
-
-  modulo Modulo       @relation(fields: [modulo_id], references: [id])
-  roles  RolPermiso[]
-
+  accion    String       // "create" | "read" | "update" | "delete"
+  recurso   String       // "facturas" | "usuarios"
+  activo    Boolean      @default(true)
+  modulo    Modulo       @relation(fields: [modulo_id], references: [id])
+  roles     RolPermiso[]
   @@unique([modulo_id, accion, recurso])
   @@map("permiso")
 }
 
 model Rol {
-  id   Int    @id @default(autoincrement())
-  uuid String @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-
-  nombre          String  @unique
-  descripcion     String?
-  parent_rol_id   Int?
-  activo          Boolean @default(true)
-  is_superadmin   Boolean @default(false) // bypasea can() — no necesita permisos cargados
-
-  parent   Rol?         @relation("RolHerencia", fields: [parent_rol_id], references: [id])
-  hijos    Rol[]        @relation("RolHerencia")
-  permisos RolPermiso[]
-  usuarios RolUsuario[]
-
+  id            Int          @id @default(autoincrement())
+  nombre        String       @unique
+  descripcion   String?
+  parent_rol_id Int?
+  activo        Boolean      @default(true)
+  parent        Rol?         @relation("RolHerencia", fields: [parent_rol_id], references: [id])
+  hijos         Rol[]        @relation("RolHerencia")
+  permisos      RolPermiso[]
+  usuarios      RolUsuario[]
   @@map("rol")
 }
 
 model RolPermiso {
-  id   Int    @id @default(autoincrement())
-  uuid String @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-
+  id         Int      @id @default(autoincrement())
   rol_id     Int
   permiso_id Int
   granted_at DateTime @default(now())
-
-  rol     Rol     @relation(fields: [rol_id], references: [id])
-  permiso Permiso @relation(fields: [permiso_id], references: [id])
-
+  rol        Rol      @relation(fields: [rol_id], references: [id])
+  permiso    Permiso  @relation(fields: [permiso_id], references: [id])
   @@unique([rol_id, permiso_id])
   @@map("rol_permiso")
 }
 
 model Usuario {
-  id   Int    @id @default(autoincrement())
-  uuid String @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-
-  nombre   String
-  username String  @unique
-  password String
-  email    String  @unique
-  activo   Boolean @default(true)
-
-  roles RolUsuario[]
-
-  // Auditoría
-  created_at DateTime  @default(now())
-  updated_at DateTime  @updatedAt
-  deleted_at DateTime?
-  created_by String?   @db.Uuid
-  updated_by String?   @db.Uuid
-  deleted_by String?   @db.Uuid
-
+  id         Int          @id @default(autoincrement())
+  nombre     String
+  password   String
+  email      String       @unique
+  activo     Boolean      @default(true)
+  created_at DateTime     @default(now())
+  roles      RolUsuario[]
   @@map("usuario")
 }
 
 model RolUsuario {
-  id   Int    @id @default(autoincrement())
-  uuid String @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-
+  id         Int       @id @default(autoincrement())
   rol_id     Int
   usuario_id Int
   desde      DateTime  @default(now())
-  hasta      DateTime? // null = indefinido
-
-  rol     Rol     @relation(fields: [rol_id], references: [id])
-  usuario Usuario @relation(fields: [usuario_id], references: [id])
-
+  hasta      DateTime?           // null = indefinido
+  rol        Rol       @relation(fields: [rol_id], references: [id])
+  usuario    Usuario   @relation(fields: [usuario_id], references: [id])
   @@unique([rol_id, usuario_id])
   @@map("rol_usuario")
-}
-
-// ─── Tabla de ejemplo con campos de auditoría ────────────────────────────────
-// Eliminá este modelo cuando ya no lo necesites como referencia.
-model Foo {
-  id   Int    @id @default(autoincrement())
-  uuid String @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-
-  nombre      String
-  descripcion String?
-  activo      Boolean @default(true)
-
-  // Auditoría
-  created_at DateTime  @default(now())
-  updated_at DateTime  @updatedAt
-  deleted_at DateTime?
-  created_by String?   @db.Uuid
-  updated_by String?   @db.Uuid
-  deleted_by String?   @db.Uuid
-
-  @@map("foo")
 }

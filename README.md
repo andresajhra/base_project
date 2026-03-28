@@ -10,10 +10,7 @@ orm prisma (complete)
 role-based access control (RBAC) (progress)
 protected and public routes (progress)
 zod (pending)
-uuid
-loggers
 env
-debugging
 
 FRONTEND
 shadcn (complete)
@@ -26,11 +23,6 @@ tanksTable (complete)
 tanksQuery (complete)
 lucida-react (complete)
 env (complete)
-debugging
-cambiar contraseña al primer inicio
-enviar correos
-  confirmar cuenta
-  reseteo de contraseña
 
 protected, public, role routes
 frontend structure (complete)
