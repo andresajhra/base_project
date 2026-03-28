@@ -16,13 +16,14 @@ export const auth = async (
   }
 
   try {
-    const { id } = jwt.verify(
+    // El JWT transporta uuid, nunca el id interno
+    const { id: uuid } = jwt.verify(
       token,
       process.env.JWT_SECRET!
     ) as JwtPayload;
 
     const usuario = await prisma.usuario.findUnique({
-      where: { id },
+      where: { uuid },
     });
 
     if (!usuario || !usuario.activo) {
