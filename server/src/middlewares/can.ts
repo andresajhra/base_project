@@ -1,12 +1,13 @@
-import type { Request, Response, NextFunction } from 'express';
+import type { Request, Response, NextFunction, RequestHandler } from 'express';
 import { prisma } from '@/config/prisma';
 import type { Accion, PermisoKey, RolUsuarioWithPermisos } from '@/types/rbac';
-import { AuthenticatedRequest } from '@/types';
+import type { AuthenticatedRequest } from '@/types';
 
 // ── cache ─────────────────────────────────────────────────────────────────────
 
 interface CacheEntry {
   permisos: Set<PermisoKey>;
+  is_superadmin: boolean;
   exp: number;
 }
 
@@ -16,7 +17,6 @@ const TTL_MS = 60_000;
 const buildPermisoKey = (accion: string, recurso: string): PermisoKey =>
   `${accion}:${recurso}` as PermisoKey;
 
-// v7 — optional chaining on .rol is mandatory, relation can be null
 const extractPermisos = (roles: RolUsuarioWithPermisos[]): Set<PermisoKey> =>
   new Set(
     roles.flatMap(ru =>
@@ -26,55 +26,55 @@ const extractPermisos = (roles: RolUsuarioWithPermisos[]): Set<PermisoKey> =>
     )
   );
 
-const getPermisosUsuario = async (usuarioId: number): Promise<Set<PermisoKey>> => {
+const getPermisosUsuario = async (usuarioId: number) => {
   const cached = cache.get(usuarioId);
-  if (cached && cached.exp > Date.now()) return cached.permisos;
+  if (cached && cached.exp > Date.now()) return cached;
 
   const now = new Date();
 
-  // v7 — omitUser filter on rol moved to where on the join table side
-  // filtering by rol.activo inside include.where is removed in v7
-  // use a nested where on the scalar field via relation filter instead
   const roles = await prisma.rolUsuario.findMany({
     where: {
       usuario_id: usuarioId,
       desde: { lte: now },
       OR: [{ hasta: null }, { hasta: { gte: now } }],
-      rol: { activo: true },   // ← v7: relation filter moved to top-level where
+      rol: { activo: true },
     },
     include: {
       rol: {
         include: {
-          permisos: {
-            include: { permiso: true },   // no where on singular relation
-          },
+          permisos: { include: { permiso: true } },
         },
       },
     },
   });
 
+  const is_superadmin = roles.some(ru => ru.rol?.is_superadmin === true);
   const permisos = extractPermisos(roles);
-  cache.set(usuarioId, { permisos, exp: Date.now() + TTL_MS });
-  return permisos;
+  const entry = { permisos, is_superadmin, exp: Date.now() + TTL_MS };
+  cache.set(usuarioId, entry);
+  return entry;
 };
 
 export const invalidarCache = (usuarioId: number): void => {
   cache.delete(usuarioId);
 };
 
-// ── middleware ─────────────────────────────────────────────────────────────────
+// ── middleware ────────────────────────────────────────────────────────────────
 
-export const can = (accion: Accion, recurso: string) =>
-  async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+export const can = (accion: Accion, recurso: string): RequestHandler =>
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    const { usuario } = req as AuthenticatedRequest;
 
-    if (!req.usuario) {
+    if (!usuario) {
       res.status(401).json({ error: 'No autenticado' });
       return;
     }
 
-    const permisos = await getPermisosUsuario(req.usuario.id);
-    const key = buildPermisoKey(accion, recurso);
+    const { permisos, is_superadmin } = await getPermisosUsuario(usuario.id);
 
+    if (is_superadmin) { next(); return; }
+
+    const key = buildPermisoKey(accion, recurso);
     if (!permisos.has(key)) {
       res.status(403).json({ error: 'Sin permiso', required: key });
       return;

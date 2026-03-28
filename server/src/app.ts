@@ -1,7 +1,7 @@
 import express, { Application } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
-import router from './routes';
+import router from './routes/index.routes';
 
 import { errorHandler } from './middlewares/errorHandler';
 import { notFound } from './middlewares/notFound';

@@ -7,6 +7,7 @@ import axios, {
 import { useAuthStore } from "@/store/authStore";
 import type { AuthPayload } from "@/store/authStore";
 import { env } from "@/config/env";
+import type { ApiError } from "@/types/api.types";
 
 const API_BASE_URL = env.apiUrl;
 
@@ -101,7 +102,10 @@ api.interceptors.response.use(
       window.location.href = "/403";
     }
 
-    return Promise.reject(error);
+    const apiError = error.response?.data as ApiError | undefined;
+    const message = apiError?.message ?? "Error inesperado";
+    return Promise.reject(new Error(message));
+    // return Promise.reject(error);
   }
 );
 
