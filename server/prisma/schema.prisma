@@ -53,11 +53,11 @@ model Rol {
   id   Int    @id @default(autoincrement())
   uuid String @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
 
-  nombre          String  @unique
-  descripcion     String?
-  parent_rol_id   Int?
-  activo          Boolean @default(true)
-  is_superadmin   Boolean @default(false) // bypasea can() — no necesita permisos cargados
+  nombre        String  @unique
+  descripcion   String?
+  parent_rol_id Int?
+  activo        Boolean @default(true)
+  is_superadmin Boolean @default(false) // bypasea can() — no necesita permisos cargados
 
   parent   Rol?         @relation("RolHerencia", fields: [parent_rol_id], references: [id])
   hijos    Rol[]        @relation("RolHerencia")
@@ -92,7 +92,8 @@ model Usuario {
   email    String  @unique
   activo   Boolean @default(true)
 
-  roles RolUsuario[]
+  roles          RolUsuario[]
+  refresh_tokens RefreshToken[]
 
   // Auditoría
   created_at DateTime  @default(now())
@@ -119,6 +120,21 @@ model RolUsuario {
 
   @@unique([rol_id, usuario_id])
   @@map("rol_usuario")
+}
+
+model RefreshToken {
+  id   Int    @id @default(autoincrement())
+  uuid String @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+
+  token      String   @unique // el JWT refresh token completo (hasheado)
+  usuario_id Int
+  expires_at DateTime
+  created_at DateTime @default(now())
+
+  usuario Usuario @relation(fields: [usuario_id], references: [id])
+
+  @@index([usuario_id])
+  @@map("refresh_token")
 }
 
 // ─── Tabla de ejemplo con campos de auditoría ────────────────────────────────
