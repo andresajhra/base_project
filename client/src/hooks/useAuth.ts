@@ -1,7 +1,12 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router";
 import { useAuthStore } from "@/store/authStore";
-import { loginService, type LoginCredentials } from "@/services/authService";
+import {
+  loginService,
+  logoutService,
+  logoutAllService,
+  type LoginCredentials,
+} from "@/services/authService";
 
 export function useAuth() {
   const navigate = useNavigate();
@@ -12,6 +17,7 @@ export function useAuth() {
     isAuthenticated,
     user,
     permissions,
+    refreshToken,
     can,
     canAny,
     canAll,
@@ -20,12 +26,12 @@ export function useAuth() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // ── Login ──────────────────────────────────────────────────────────────────
   const login = async (credentials: LoginCredentials) => {
     setIsLoading(true);
     setError(null);
 
     try {
-      // loginService decide internamente si usa mock o API real
       const payload = await loginService(credentials);
       setAuth(payload);
 
@@ -44,7 +50,20 @@ export function useAuth() {
     }
   };
 
-  const logout = () => {
+  // ── Logout — cierra la sesión actual ───────────────────────────────────────
+  const logout = async () => {
+    if (refreshToken) {
+      await logoutService(refreshToken); // invalida el refresh token en el backend
+    }
+    storeLogout();
+    navigate("/login", { replace: true });
+  };
+
+  // ── Logout all — cierra todas las sesiones del usuario ─────────────────────
+  const logoutAll = async () => {
+    if (refreshToken) {
+      await logoutAllService(refreshToken);
+    }
     storeLogout();
     navigate("/login", { replace: true });
   };
@@ -60,5 +79,6 @@ export function useAuth() {
     canAll,
     login,
     logout,
+    logoutAll,
   };
 }

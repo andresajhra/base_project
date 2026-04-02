@@ -5,7 +5,6 @@ import axios, {
   type AxiosError,
 } from "axios";
 import { useAuthStore } from "@/store/authStore";
-import type { AuthPayload } from "@/store/authStore";
 import { env } from "@/config/env";
 import type { ApiError } from "@/types/api.types";
 
@@ -75,17 +74,19 @@ api.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        // El backend devuelve el mismo AuthPayload que en el login,
-        // incluyendo el array de permissions actualizado.
-        const { data } = await axios.post<AuthPayload>(
-          `${API_BASE_URL}/auth/refresh`,
-          { refreshToken }
-        );
+        // El backend devuelve { success, data: { token, refreshToken } }
+        const { data } = await axios.post<{
+          success: boolean;
+          data: { token: string; refreshToken: string };
+        }>(`${API_BASE_URL}/auth/refresh`, { refreshToken });
 
-        useAuthStore.getState().setAuth(data);
-        api.defaults.headers.common.Authorization = `Bearer ${data.accessToken}`;
-        processQueue(null, data.accessToken);
-        originalRequest.headers.Authorization = `Bearer ${data.accessToken}`;
+        const { token: newToken, refreshToken: newRefreshToken } = data.data;
+
+        // Actualizar solo los tokens en el store (sin tocar user ni permissions)
+        useAuthStore.getState().setToken(newToken, newRefreshToken);
+        api.defaults.headers.common.Authorization = `Bearer ${newToken}`;
+        processQueue(null, newToken);
+        originalRequest.headers.Authorization = `Bearer ${newToken}`;
         return api(originalRequest);
       } catch (refreshError) {
         processQueue(refreshError, null);
@@ -105,7 +106,6 @@ api.interceptors.response.use(
     const apiError = error.response?.data as ApiError | undefined;
     const message = apiError?.message ?? "Error inesperado";
     return Promise.reject(new Error(message));
-    // return Promise.reject(error);
   }
 );
 

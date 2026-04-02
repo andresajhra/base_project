@@ -8,12 +8,12 @@ import { Loader2, AlertCircle } from "lucide-react";
 
 export function LoginPage() {
   const { login, isLoading, error } = useAuth();
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await login({ email, password });
+    await login({ identifier, password });
   };
 
   return (
@@ -22,7 +22,9 @@ export function LoginPage() {
         {/* Logo */}
         <div className="text-center space-y-1">
           <h1 className="text-2xl font-semibold tracking-tight">Bienvenido</h1>
-          <p className="text-sm text-muted-foreground">Ingresa tus credenciales para continuar</p>
+          <p className="text-sm text-muted-foreground">
+            Ingresa tus credenciales para continuar
+          </p>
         </div>
 
         {/* Formulario */}
@@ -35,15 +37,15 @@ export function LoginPage() {
           )}
 
           <div className="space-y-2">
-            <Label htmlFor="email">Correo electrónico</Label>
+            <Label htmlFor="identifier">Email o usuario</Label>
             <Input
-              id="email"
-              type="email"
-              placeholder="nombre@empresa.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              id="identifier"
+              type="text"
+              placeholder="nombre@empresa.com o usuario"
+              value={identifier}
+              onChange={(e) => setIdentifier(e.target.value)}
               required
-              autoComplete="email"
+              autoComplete="username"
             />
           </div>
 

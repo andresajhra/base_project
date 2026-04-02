@@ -4,26 +4,60 @@ import type { AuthPayload } from "@/store/authStore";
 import { env } from "@/config/env";
 
 // ─── Flag de mock ─────────────────────────────────────────────────────────────
-// Activa el mock en .env.local con: VITE_USE_MOCK=true
-// En producción o cuando el backend esté listo, elimina la variable o ponla en false.
 const USE_MOCK = env.useMock === "true";
 
+// identifier puede ser email o username
 export interface LoginCredentials {
-  email: string;
+  identifier: string;
   password: string;
 }
 
-// ─── Auth service ─────────────────────────────────────────────────────────────
-// Único punto de contacto para autenticación.
-// El resto de la app (useAuth, store) no sabe si está hablando con el mock o la API real.
+export interface RefreshResponse {
+  token: string;
+  refreshToken: string;
+}
 
+// ─── Login ────────────────────────────────────────────────────────────────────
 export async function loginService(
   credentials: LoginCredentials
 ): Promise<AuthPayload> {
   if (USE_MOCK) {
-    return mockLogin(credentials.email, credentials.password);
+    return mockLogin(credentials.identifier, credentials.password);
   }
 
-  const { data } = await api.post<AuthPayload>("/auth/login", credentials);
-  return data;
+  const { data } = await api.post<{ success: boolean; data: AuthPayload }>(
+    "/auth/login",
+    credentials
+  );
+  return data.data;
+}
+
+// ─── Logout ───────────────────────────────────────────────────────────────────
+export async function logoutService(refreshToken: string): Promise<void> {
+  // Si falla no bloqueamos el logout del frontend
+  try {
+    await api.post("/auth/logout", { refreshToken });
+  } catch {
+    // silencioso — el store se limpia igual
+  }
+}
+
+// ─── Logout all sessions ──────────────────────────────────────────────────────
+export async function logoutAllService(refreshToken: string): Promise<void> {
+  try {
+    await api.post("/auth/logout-all", { refreshToken });
+  } catch {
+    // silencioso
+  }
+}
+
+// ─── Refresh token ────────────────────────────────────────────────────────────
+export async function refreshTokenService(
+  refreshToken: string
+): Promise<RefreshResponse> {
+  const { data } = await api.post<{ success: boolean; data: RefreshResponse }>(
+    "/auth/refresh",
+    { refreshToken }
+  );
+  return data.data;
 }

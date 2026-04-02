@@ -5,23 +5,23 @@ import type { Role, Permission } from "@/config/rbac";
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 
 export interface User {
-  id: string;
-  name: string;
+  uuid: string;       // identificador público — nunca el id interno
+  nombre: string;
+  username: string;
   email: string;
-  role: Role;
+  roles: Role[];      // array — un usuario puede tener varios roles
   avatar?: string;
 }
 
 /**
- * Lo que devuelve el backend en /auth/login y /auth/refresh.
- * `permissions` es el array real que el frontend usa para RBAC —
- * no se recalcula nada localmente.
+ * Lo que devuelve el backend en /auth/login y /auth/register.
+ * `permissions` es el array real que el frontend usa para RBAC.
  */
 export interface AuthPayload {
   user: User;
   permissions: Permission[];
   accessToken: string;
-  refreshToken?: string;
+  refreshToken: string;
 }
 
 interface AuthState {
@@ -33,10 +33,10 @@ interface AuthState {
 
   // Actions
   setAuth: (payload: AuthPayload) => void;
-  setToken: (token: string) => void;
+  setToken: (token: string, refreshToken?: string) => void;
   logout: () => void;
 
-  // Helpers RBAC — comparan contra el array que vino del backend
+  // Helpers RBAC
   can: (permission: Permission) => boolean;
   canAny: (permissions: Permission[]) => boolean;
   canAll: (permissions: Permission[]) => boolean;
@@ -58,11 +58,17 @@ export const useAuthStore = create<AuthState>()(
           user,
           permissions,
           token: accessToken,
-          refreshToken: refreshToken ?? null,
+          refreshToken,
           isAuthenticated: true,
         }),
 
-      setToken: (token) => set({ token }),
+      // Usado por el interceptor de axios tras un refresh exitoso
+      setToken: (token, refreshToken) =>
+        set((state) => ({
+          token,
+          ...(refreshToken ? { refreshToken } : {}),
+          isAuthenticated: true,
+        })),
 
       logout: () =>
         set({
@@ -73,16 +79,9 @@ export const useAuthStore = create<AuthState>()(
           isAuthenticated: false,
         }),
 
-      // Chequea si el usuario tiene UN permiso específico
       can: (permission) => get().permissions.includes(permission),
-
-      // Chequea si el usuario tiene AL MENOS UNO de los permisos
-      canAny: (permissions) =>
-        permissions.some((p) => get().permissions.includes(p)),
-
-      // Chequea si el usuario tiene TODOS los permisos
-      canAll: (permissions) =>
-        permissions.every((p) => get().permissions.includes(p)),
+      canAny: (permissions) => permissions.some((p) => get().permissions.includes(p)),
+      canAll: (permissions) => permissions.every((p) => get().permissions.includes(p)),
     }),
     {
       name: "auth-storage",
